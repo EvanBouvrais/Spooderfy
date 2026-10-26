@@ -25,7 +25,7 @@
         <!-- Hello je sert à connecter mon utilisateur et afficher son pseudo quand il est
         connecté -->
         <section>
-            
+
         </section>
 
     </aside>

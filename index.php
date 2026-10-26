@@ -17,7 +17,7 @@
     
     <!-- Hello, je suis la zone qui sert à afficher tout ce qui se trouve a gauche de l'écran
     soit les playlist et la connexion utilisateur -->
-    <aside class="flex h-screen w-75 shrink-0 flex-col border-r-2 border-t-2 rounded-[15px] border-[#004FD9] bg-[#000A1C]">
+    <aside class="flex h-screen w-75 shrink-0 flex-col border-r-2 border-t-2 rounded-[20px] border-[#004FD9] bg-[#000A1C]">
         <!-- Hello je sert à afficher les playlists de mon utilisateur -->
         <section>
 
@@ -25,7 +25,7 @@
 
         <!-- Hello je sert à connecter mon utilisateur et afficher son pseudo quand il est
         connecté -->
-        <section class="mt-auto w-75 h-45 border-r-2 border-t-2 border-[#0055FF] rounded-[15px]">
+        <section class="mt-auto w-75 h-45 border-r-2 border-t-2 border-[#0055FF] rounded-[20px]">
             <p class="text-white mt-5 ml-5">Session actuelle:</p>
             <?php if (isset($_SESSION['username'])): ?>
 
@@ -93,8 +93,12 @@
     <main class="flex min-w-0 flex-1 flex-col">
 
         <!-- Hello, je sert à afficher la barre de recherche -->
-         <header class="w-full h-20 border-b bg-[#000C21] border-[#004FD9] rounded-b-[15px]">
+        <header class="flex h-20 w-full items-center justify-center rounded-b-[20px] border-b border-[#004FD9] bg-[#000C21]">
+            <div class="flex h-12 w-4/5 items-center rounded-[25px] border-b-2 border-r-2 border-[#0055FF] bg-[#00050F] px-4">
+                <input type="text" placeholder="Rechercher un titre, un artiste..." class="min-w-0 flex-1 bg-transparent text-white outline-none">
 
+                <img src="icon/magnifying-glass-solid-full.svg" alt="Rechercher" class="ml-3 h-6 w-6">
+            </div>
         </header>
 
         <!-- Hello, je sert à afficher les musiques -->
@@ -103,8 +107,9 @@
         </section>
 
         <!-- Hello, je sert à afficher le lecteur audio -->
-        <section class="w-full mt-auto h-45 border-t bg-[#000C21] border-[#004FD9] rounded-t-[15px]">
-
+        <section class="w-full items-center justify-center flex mt-auto h-45 border-t bg-[#000C21] border-[#004FD9] rounded-t-[20px]">
+            <div class="flex h-30 w-9/10 items-center rounded-[25px] border-b-2 border-r-2 border-[#0055FF] bg-[#00050F] px-4">
+            </div>
         </section>
 
     </main>
@@ -114,16 +119,16 @@
 
     <!-- Hello, je sert à afficher tout ce qui est à droite de l'écran,
     soit la musique actuelle et les commentaires -->
-    <aside class="flex h-screen w-105 shrink-0 ml-auto flex-col border-l-2 border-t-2 rounded-[15px] border-[#004FD9] bg-[#000A1C]">
+    <aside class="flex h-screen w-105 shrink-0 ml-auto flex-col border-l-2 border-t-2 rounded-[20px] border-[#004FD9] bg-[#000A1C]">
 
         <!-- Hello, je sert à afficher la musique actuelle -->
         <section>
-
+            
         </section>
 
         <!-- Hello, je sert a afficher les commentaires -->
-        <section>
-
+        <section class="mt-auto ml-5 h-70 w-auto shrink-0 border-t-2 border-l-2 border-[#0055FF] rounded-tr-[20px] rounded-bl-[20px] bg-[#00050F]">
+            
         </section>
 
     </aside>

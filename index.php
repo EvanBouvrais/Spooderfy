@@ -1,5 +1,5 @@
 <?php
-
+session_start();
 ?>
 
 
@@ -27,9 +27,10 @@
         connecté -->
         <section class="mt-auto w-75 h-45 border-r-2 border-t-2 border-[#0055FF] rounded-[15px]">
             <p class="text-white mt-5 ml-5">Session actuelle:</p>
-            <?php if (isset($_SESSION['username'])): ?>
+            <?php
+            if (isset($_SESSION['username'])): ?>
 
-                    <p class="text-white">
+                    <p class="text-white mt-5 ml-5">
                         <?= htmlspecialchars($_SESSION['username']) ?>
                     </p>
 
@@ -74,7 +75,7 @@
                         Pseudonyme
                     </label>
 
-                    <input type="text" id="username" name="username" maxlength="50" required class="w-full rounded-md p-2 mb-4 bg-[#151D28] text-white border border-[#2577D9]" placeholder="Ton pseudonyme">
+                    <input type="text" id="username" name="username" maxlength="30" required class="w-full rounded-md p-2 mb-4 bg-[#151D28] text-white border border-[#2577D9]" placeholder="Ton pseudonyme">
 
                     <button type="submit" class="w-full bg-[#2577D9] hover:bg-blue-600 text-white rounded-md p-2">
                         Se connecter
@@ -93,8 +94,10 @@
     <main class="flex min-w-0 flex-1 flex-col">
 
         <!-- Hello, je sert à afficher la barre de recherche -->
-         <header class="w-full h-20 border-b bg-[#000C21] border-[#004FD9] rounded-b-[15px]">
-
+         <header class="w-full h-20 border-b bg-[#000C21] border-[#004FD9] rounded-b-[15px] flex justify-center items-center">
+            <form  method="POST" action="">
+                <input class="w-110 h-10 border-b bg-[#000C21] border-[#004FD9] rounded-t-[15px] rounded-b-[15px] text-white" type="text" name="recherche" placeholder="Rechercher...">
+            </form>
         </header>
 
         <!-- Hello, je sert à afficher les musiques -->

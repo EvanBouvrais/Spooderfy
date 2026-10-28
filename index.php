@@ -17,7 +17,7 @@ session_start();
     
     <!-- Hello, je suis la zone qui sert à afficher tout ce qui se trouve a gauche de l'écran
     soit les playlist et la connexion utilisateur -->
-    <aside class="flex h-screen w-75 shrink-0 flex-col border-r-2 border-t-2 rounded-[15px] border-[#004FD9] bg-[#000A1C]">
+    <aside class="flex h-screen w-75 shrink-0 flex-col border-r-2 border-t-2 rounded-[20px] border-[#004FD9] bg-[#000A1C]">
         <!-- Hello je sert à afficher les playlists de mon utilisateur -->
         <section>
 
@@ -25,7 +25,7 @@ session_start();
 
         <!-- Hello je sert à connecter mon utilisateur et afficher son pseudo quand il est
         connecté -->
-        <section class="mt-auto w-75 h-45 border-r-2 border-t-2 border-[#0055FF] rounded-[15px]">
+        <section class="mt-auto w-75 h-45 border-r-2 border-t-2 border-[#0055FF] rounded-[20px]">
             <p class="text-white mt-5 ml-5">Session actuelle:</p>
             <?php
             if (isset($_SESSION['username'])): ?>
@@ -94,9 +94,24 @@ session_start();
     <main class="flex min-w-0 flex-1 flex-col">
 
         <!-- Hello, je sert à afficher la barre de recherche -->
-         <header class="w-full h-20 border-b bg-[#000C21] border-[#004FD9] rounded-b-[15px] flex justify-center items-center">
-            <form  method="POST" action="">
-                <input class="w-110 h-10 border-b bg-[#000C21] border-[#004FD9] rounded-t-[15px] rounded-b-[15px] text-white" type="text" name="recherche" placeholder="Rechercher...">
+        <header class="flex h-20 w-full shrink-0 items-center justify-center rounded-b-[15px] border-b-2 border-[#004FD9] bg-[#000C21]">
+            <form method="POST" action="" class="flex h-10 w-4/5 items-center rounded-[20px] border-b-2 border-r-2 border-[#004FD9] bg-[#00050F] px-4">
+
+                <input
+                    type="text"
+                    name="recherche"
+                    placeholder="Rechercher..."
+                    class="h-full min-w-0 flex-1 bg-transparent text-white outline-none"
+                >
+
+                <button type="submit" aria-label="Lancer la recherche" class="ml-3 flex shrink-0 items-center justify-center">
+                    <img
+                        src="icon/magnifying-glass-solid-full.svg"
+                        alt=""
+                        class="h-5 w-5 max-h-5 max-w-5 object-contain"
+                    >
+                </button>
+
             </form>
         </header>
 
@@ -105,10 +120,146 @@ session_start();
 
         </section>
 
-        <!-- Hello, je sert à afficher le lecteur audio -->
-        <section class="w-full mt-auto h-45 border-t bg-[#000C21] border-[#004FD9] rounded-t-[15px]">
+        
+    <!-- Lecteur audio -->
+    <section class="mt-auto flex h-45 w-full shrink-0 items-center justify-center rounded-t-[20px] border-t border-[#004FD9] bg-[#000C21]">
+        <div class="flex h-30 w-9/10 items-center gap-4 rounded-[25px] border-b-2 border-r-2 border-[#0055FF] bg-[#00050F] px-4">
 
-        </section>
+            <!-- Informations sur le morceau -->
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[#101D35]">
+                    <span class="text-2xl text-white">♫</span>
+                </div>
+
+                <div class="min-w-0">
+                    <p class="truncate font-semibold text-white">
+                        Beneath the Mask
+                    </p>
+                    <p class="truncate text-sm text-gray-400">
+                        Persona 5
+                    </p>
+                </div>
+            </div>
+
+            <!-- Commandes et progression -->
+            <div class="flex w-2/5 min-w-0 flex-col items-center gap-3">
+
+                <!-- Boutons de lecture -->
+                <div class="flex items-center justify-center gap-5">
+
+                    <!-- Répétition -->
+                    <button
+                        type="button"
+                        id="boutonRepetition"
+                        aria-label="Répéter la musique"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center hover:scale-110"
+                    >
+                        <img
+                            src="icon/repeat-solid-full.svg"
+                            alt=""
+                            class="h-5 w-5 object-contain"
+                        >
+                    </button>
+
+                    <!-- Musique précédente -->
+                    <button
+                        type="button"
+                        id="boutonPrecedent"
+                        aria-label="Musique précédente"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center hover:scale-110"
+                    >
+                        <img
+                            src="icon/forward-solid-full.svg"
+                            alt="Précédent"
+                            class="h-7 w-7 object-contain rotate-180"
+                        >
+                    </button>
+
+                    <!-- Lecture / pause -->
+                    <button
+                        type="button"
+                        id="boutonLecture"
+                        aria-label="Lire la musique"
+                        class="flex h-14 w-14 shrink-0 items-center justify-center"
+                    >
+                        <img
+                            id="iconeLecture"
+                            src="icon/circle-play-solid-full.svg"
+                            alt=""
+                            class="h-10 w-10 object-contain"
+                        >
+                    </button>
+
+                    <!-- Musique suivante -->
+                    <button
+                        type="button"
+                        id="boutonSuivant"
+                        aria-label="Musique suivante"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center hover:scale-110"
+                    >
+                        <img
+                            src="icon/forward-solid-full.svg"
+                            alt="Suivant"
+                            class="h-7 w-7 object-contain"
+                        >
+                    </button>
+
+                    <!-- Lecture aléatoire -->
+                    <button
+                        type="button"
+                        id="boutonAleatoire"
+                        aria-label="Lecture aléatoire"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center hover:scale-110"
+                    >
+                        <img
+                            src="icon/shuffle-solid-full.svg"
+                            alt=""
+                            class="h-5 w-5 object-contain"
+                        >
+                    </button>
+
+                </div>
+
+                <!-- Barre de progression -->
+                <div class="flex w-full items-center gap-2 text-xs text-gray-400">
+                    <span id="tempsActuel">0:00</span>
+
+                    <input
+                        type="range"
+                        id="barreProgression"
+                        min="0"
+                        max="100"
+                        value="0"
+                        class="min-w-0 flex-1 cursor-pointer accent-blue-500"
+                        aria-label="Position dans le morceau"
+                    >
+
+                    <span id="dureeTotale">0:00</span>
+                </div>
+
+            </div>
+
+            <!-- Contrôle du volume -->
+            <div class="flex flex-1 items-center justify-end gap-2">
+                <span class="text-white">🔊</span>
+
+                <input
+                    type="range"
+                    id="volume"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="0.5"
+                    class="w-20 cursor-pointer accent-blue-500"
+                    aria-label="Volume"
+                >
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Fichier audio temporaire -->
+    <audio id="audio" preload="metadata" src="song/all_song/Beneath_the_Mask-rain--Persona_5.mp3"></audio>
 
     </main>
 
@@ -117,16 +268,16 @@ session_start();
 
     <!-- Hello, je sert à afficher tout ce qui est à droite de l'écran,
     soit la musique actuelle et les commentaires -->
-    <aside class="flex h-screen w-105 shrink-0 ml-auto flex-col border-l-2 border-t-2 rounded-[15px] border-[#004FD9] bg-[#000A1C]">
+    <aside class="flex h-screen w-105 shrink-0 ml-auto flex-col border-l-2 border-t-2 rounded-[20px] border-[#004FD9] bg-[#000A1C]">
 
         <!-- Hello, je sert à afficher la musique actuelle -->
         <section>
-
+            
         </section>
 
         <!-- Hello, je sert a afficher les commentaires -->
-        <section>
-
+        <section class="mt-auto ml-5 h-70 w-auto shrink-0 border-t-2 border-l-2 border-[#0055FF] rounded-tr-[20px] rounded-bl-[20px] bg-[#00050F]">
+            
         </section>
 
     </aside>

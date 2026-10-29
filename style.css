@@ -1,0 +1,52 @@
+/* Barre de progression de Spooderfy */
+.barre-progression {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(
+        to right,
+        #0055FF 0%,
+        #0055FF var(--progression, 0%),
+        #15233B var(--progression, 0%),
+        #15233B 100%
+    );
+    border-radius: 999px;
+    outline: none;
+}
+
+/* Curseur pour Chrome, Edge et Opera */
+.barre-progression::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #0055FF;
+    border: 2px solid #80B3FF;
+    cursor: pointer;
+
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.barre-progression:hover::-webkit-slider-thumb {
+    opacity: 1;
+}
+
+/* Curseur pour Firefox */
+.barre-progression::-moz-range-thumb {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.barre-progression:hover::-moz-range-thumb {
+    opacity: 1;
+}
+
+/* Couleur de la partie déjà parcourue dans Firefox */
+.barre-progression::-moz-range-progress {
+    background: #0055FF;
+    height: 5px;
+    border-radius: 999px;
+}

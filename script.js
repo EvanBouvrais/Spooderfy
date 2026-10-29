@@ -133,12 +133,18 @@ barreProgression.addEventListener("input", () => {
 });
 
 // Contrôle du volume
-volume.addEventListener("input", () => {
+function actualiserVolume() {
     audio.volume = Number(volume.value);
-});
+
+    const pourcentage = Number(volume.value) * 100;
+
+    volume.style.setProperty("--volume", `${pourcentage}%`);
+}
+
+volume.addEventListener("input", actualiserVolume);
 
 // Volume initial
-audio.volume = Number(volume.value);
+actualiserVolume();
 
 
 const cartesMusiques = document.querySelectorAll("[data-song-audio]");
@@ -151,6 +157,10 @@ async function selectionnerMusique(index) {
     if (!carte) {
         return;
     }
+
+    chargerCommentaires(carte.dataset.songId);
+    document.getElementById("lecteurAudio").classList.remove("contenu-cache");
+    document.getElementById("musiqueActuelle").classList.remove("contenu-cache");
 
     // Enregistrer le morceau quitté, sauf lors d'un retour en arrière
     if (
@@ -177,19 +187,29 @@ async function selectionnerMusique(index) {
     const cheminAudio = carte.dataset.songAudio;
     const nomMusique = carte.dataset.songName;
     const cheminPochette = carte.dataset.songCoverage;
+
     const pochetteMusique = document.getElementById("pochetteMusique");
+    const couvertureActuelle = document.getElementById("couvertureActuelle");
+    const titreActuel = document.getElementById("titreActuel");
 
     // Mettre à jour la pochette
     if (cheminPochette) {
         pochetteMusique.src = cheminPochette;
         pochetteMusique.alt = "Pochette de " + nomMusique;
+
+        couvertureActuelle.src = cheminPochette;
+        couvertureActuelle.alt = "Pochette de " + nomMusique;
     } else {
         pochetteMusique.removeAttribute("src");
         pochetteMusique.alt = "Aucune pochette disponible";
+
+        couvertureActuelle.removeAttribute("src");
+        couvertureActuelle.alt = "Aucune pochette disponible";
     }
 
     // Mettre à jour le titre
     document.getElementById("titreMusique").textContent = nomMusique;
+    titreActuel.textContent = nomMusique;
 
     // Charger le nouveau fichier audio
     audio.src = cheminAudio;
@@ -312,4 +332,133 @@ boutonAleatoire.addEventListener("click", () => {
         "aria-pressed",
         String(aleatoireActif)
     );
+});
+
+// Actualise l'affichage de la barre de volume
+function actualiserBarreVolume() {
+    const pourcentage = Number(volume.value) * 100;
+
+    volume.style.setProperty("--volume", `${pourcentage}%`);
+}
+
+// Actualise la barre lorsque le volume change
+volume.addEventListener("input", actualiserBarreVolume);
+
+async function chargerCommentaires(songId) {
+    const listeCommentaires = document.getElementById("listeCommentaires");
+
+    // Vider la liste pendant le chargement
+    listeCommentaires.replaceChildren();
+
+    try {
+        const reponse = await fetch(
+            `charger-commentaires.php?song_id=${encodeURIComponent(songId)}`
+        );
+
+        if (!reponse.ok) {
+            throw new Error("Erreur lors du chargement des commentaires.");
+        }
+
+        const commentaires = await reponse.json();
+
+        if (commentaires.length === 0) {
+            const message = document.createElement("p");
+            message.className = "text-gray-400";
+            message.textContent = "Aucun commentaire pour cette musique.";
+
+            listeCommentaires.appendChild(message);
+            return;
+        }
+
+        commentaires.forEach((commentaire) => {
+            const bloc = document.createElement("article");
+            bloc.className = "mb-4 rounded-lg bg-[#000A1C] p-3";
+
+            const auteur = document.createElement("p");
+            auteur.className = "mb-1 font-semibold text-purple-500";
+            auteur.textContent = commentaire.username;
+
+            const texte = document.createElement("p");
+            texte.className = "whitespace-pre-wrap wrap-break-word text-white";
+            texte.textContent = commentaire.text;
+
+            bloc.append(auteur, texte);
+            listeCommentaires.appendChild(bloc);
+        });
+
+    } catch (erreur) {
+        console.error(erreur);
+
+        const message = document.createElement("p");
+        message.className = "text-red-400";
+        message.textContent = "Impossible de charger les commentaires.";
+
+        listeCommentaires.appendChild(message);
+    }
+}
+
+function ouvrirCommentaire() {
+    const fenetre = document.getElementById("fenetreCommentaire");
+
+    fenetre.classList.remove("hidden");
+    fenetre.classList.add("flex");
+
+    document.getElementById("texteCommentaire").focus();
+}
+
+function fermerCommentaire() {
+    const fenetre = document.getElementById("fenetreCommentaire");
+
+    fenetre.classList.add("hidden");
+    fenetre.classList.remove("flex");
+}
+
+const formulaireCommentaire = document.getElementById("formulaireCommentaire");
+
+
+formulaireCommentaire.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const champTexte = document.getElementById("texteCommentaire");
+    const texte = champTexte.value.trim();
+
+    if (texte === "") {
+        return;
+    }
+
+    const carte = cartesMusiques[indexMusiqueActuelle];
+
+    if (!carte) {
+        alert("Sélectionne d'abord une musique.");
+        return;
+    }
+
+    const donnees = new FormData();
+
+    donnees.append("song_id", carte.dataset.songId);
+    donnees.append("text", texte);
+
+    try {
+        const reponse = await fetch("enregistrer-commentaire.php", {
+            method: "POST",
+            body: donnees
+        });
+
+        const resultat = await reponse.json();
+
+        if (!reponse.ok) {
+            throw new Error(
+                resultat.erreur || "Impossible de publier le commentaire."
+            );
+        }
+
+        champTexte.value = "";
+        fermerCommentaire();
+
+        await chargerCommentaires(carte.dataset.songId);
+
+    } catch (erreur) {
+        console.error(erreur);
+        alert(erreur.message || "Une erreur est survenue lors de la publication.");
+    }
 });

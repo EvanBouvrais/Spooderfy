@@ -51,3 +51,58 @@
     border-radius: 999px;
 }
 
+/* Barre de volume */
+.barre-volume {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 5rem;
+    height: 5px;
+    background: linear-gradient(
+        to right,
+        #0055FF 0%,
+        #0055FF var(--volume, 50%),
+        #15233B var(--volume, 50%),
+        #15233B 100%
+    );
+    border-radius: 999px;
+    outline: none;
+}
+
+/* Curseur pour Chrome, Edge et Opera */
+.barre-volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #0055FF;
+    border: none;
+    cursor: pointer;
+    opacity: 1;
+}
+
+/* Curseur pour Firefox */
+.barre-volume::-moz-range-thumb {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0055FF;
+    border: none;
+    cursor: pointer;
+    opacity: 1;
+}
+
+/* Partie remplie dans Firefox */
+.barre-volume::-moz-range-progress {
+    background: #0055FF;
+    height: 5px;
+    border-radius: 999px;
+}
+
+#lecteurAudio.contenu-cache > * {
+    visibility: hidden;
+}
+
+#musiqueActuelle.contenu-cache > * {
+    visibility: hidden;
+}

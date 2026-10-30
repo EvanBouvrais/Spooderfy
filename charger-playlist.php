@@ -32,7 +32,7 @@ $requete = $mysqlClient->prepare(
         ON s.id = pp.song_id
      WHERE p.id = :playlist_id
        AND p.user_id = :user_id
-     ORDER BY pp.position ASC, pp.song_id ASC'
+     ORDER BY pp.id ASC'
 );
 
 $requete->execute([

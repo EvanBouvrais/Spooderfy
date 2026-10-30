@@ -44,19 +44,6 @@ if (empty($songIds)) {
 try {
     $mysqlClient->beginTransaction();
 
-    // Créer la playlist.
-    $requete = $mysqlClient->prepare(
-        'INSERT INTO playlist (name, user_id)
-         VALUES (:name, :user_id)'
-    );
-
-    $requete->execute([
-        'name' => $nom,
-        'user_id' => $userId
-    ]);
-
-    $playlistId = $mysqlClient->lastInsertId();
-
     // Vérifier que les musiques existent réellement.
     $placeholders = implode(
         ',',
@@ -74,35 +61,46 @@ try {
         $requete->fetchAll(PDO::FETCH_COLUMN)
     );
 
-    $musiquesExistantes = array_fill_keys(
-        $idsExistants,
-        true
+    $musiquesExistantes = array_fill_keys($idsExistants, true);
+    $songIds = array_values(array_filter(
+        $songIds,
+        fn($id) => isset($musiquesExistantes[(int) $id])
+));
+
+    if (empty($songIds)) {
+        $mysqlClient->rollBack();
+        exit('Sélectionne au moins une musique existante.');
+    }
+
+    // La table playlist exige aussi un song_id, conservé pour compatibilité.
+    $requete = $mysqlClient->prepare(
+        'INSERT INTO playlist (name, user_id, song_id)
+         VALUES (:name, :user_id, :song_id)'
     );
 
-    // Insérer les morceaux en conservant l'ordre reçu.
+    $requete->execute([
+        'name' => $nom,
+        'user_id' => $userId,
+        'song_id' => (int) $songIds[0]
+    ]);
+
+    $playlistId = $mysqlClient->lastInsertId();
+
+    // L'identifiant auto-incrémenté du pivot conserve l'ordre d'insertion.
     $ajout = $mysqlClient->prepare(
         'INSERT INTO pivot_playlist
-            (playlist_id, song_id, position)
+            (playlist_id, song_id)
          VALUES
-            (:playlist_id, :song_id, :position)'
+            (:playlist_id, :song_id)'
     );
-
-    $position = 1;
 
     foreach ($songIds as $songId) {
         $songId = (int) $songId;
 
-        if (!isset($musiquesExistantes[$songId])) {
-            continue;
-        }
-
         $ajout->execute([
             'playlist_id' => $playlistId,
-            'song_id' => $songId,
-            'position' => $position
+            'song_id' => $songId
         ]);
-
-        $position++;
     }
 
     $mysqlClient->commit();

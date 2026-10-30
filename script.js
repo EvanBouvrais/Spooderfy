@@ -236,22 +236,6 @@ function basculerVolume() {
 
 volume.addEventListener("input", actualiserVolume);
 
-// Volume initial
-audio.volume = Number(volume.value);
-
-
-const toutesLesCartesMusiques = Array.from(
-    document.querySelectorAll("[data-song-audio]")
-);
-
-// File de lecture actuelle : toutes les musiques ou une playlist
-let cartesMusiques = [...toutesLesCartesMusiques];
-
-let nomPlaylistActuelle = null;
-let indexMusiqueActuelle = -1;
-let retourHistoriqueEnCours = false;
-
-async function selectionnerMusique(index) {
 const volumeSauvegarde = localStorage.getItem("volumeSpooderfy");
 
 if (volumeSauvegarde !== null) {
@@ -260,6 +244,7 @@ if (volumeSauvegarde !== null) {
     if (Number.isFinite(valeur) && valeur >= 0 && valeur <= 1) {
         volume.value = valeur;
     }
+
     if (valeur > 0) {
         volumePrecedent = valeur;
     }
@@ -267,8 +252,13 @@ if (volumeSauvegarde !== null) {
 
 actualiserVolume();
 
+const toutesLesCartesMusiques = Array.from(
+    document.querySelectorAll("[data-song-audio]")
+);
 
-const cartesMusiques = document.querySelectorAll("[data-song-audio]");
+// File de lecture actuelle : toutes les musiques ou une playlist
+let cartesMusiques = [...toutesLesCartesMusiques];
+let nomPlaylistActuelle = null;
 let indexMusiqueActuelle = -1;
 let retourHistoriqueEnCours = false;
 
@@ -549,9 +539,6 @@ async function selectionnerMusique(index) {
 
     // Retirer la mise en évidence de toutes les cartes
     toutesLesCartesMusiques.forEach((carte) => {
-    carte.removeAttribute("data-playing");
-});
-    cartesMusiques.forEach((carte) => {
         carte.removeAttribute("data-playing");
     });
 
@@ -565,8 +552,6 @@ async function selectionnerMusique(index) {
     const nomMusique = carte.dataset.songName;
     const cheminPochette = carte.dataset.songCoverage;
     const pochetteMusique = document.getElementById("pochetteMusique");
-
-    const pochetteMusique = document.getElementById("pochetteMusique");
     const couvertureActuelle = document.getElementById("couvertureActuelle");
     const titreActuel = document.getElementById("titreActuel");
 
@@ -574,10 +559,6 @@ async function selectionnerMusique(index) {
     if (cheminPochette) {
         pochetteMusique.src = cheminPochette;
         pochetteMusique.alt = "Pochette de " + nomMusique;
-    } else {
-        pochetteMusique.removeAttribute("src");
-        pochetteMusique.alt = "Aucune pochette disponible";
-
         couvertureActuelle.src = cheminPochette;
         couvertureActuelle.alt = "Pochette de " + nomMusique;
     } else {
@@ -613,59 +594,28 @@ async function selectionnerMusique(index) {
 }
 
 toutesLesCartesMusiques.forEach((carte) => {
-    carte.addEventListener("click", () => {
+    carte.addEventListener("click", async () => {
         // Un clic dans le catalogue complet quitte la playlist.
         cartesMusiques = [...toutesLesCartesMusiques];
         nomPlaylistActuelle = null;
-
         historiqueMusiques = [];
-
-        const index = cartesMusiques.indexOf(carte);
-
         indexMusiqueActuelle = -1;
-
-// Réafficher toutes les musiques du catalogue
-toutesLesCartesMusiques.forEach((carte) => {
-    carte.classList.remove("hidden");
-});
-cartesMusiques = cartesPlaylist;
-
-cartesMusiques.forEach((carte, index) => {
-    carte.addEventListener("click", () => {
-        selectionnerMusique(index);
+        await selectionnerMusique(cartesMusiques.indexOf(carte));
     });
 });
 
 const boutonSuivant = document.getElementById("boutonSuivant");
 
 boutonSuivant.addEventListener("click", () => {
-    if (aleatoireActif) {
-        // Choisir une musique au hasard
-        let nouvelIndex;
-
-        if (cartesMusiques.length === 1) {
-            nouvelIndex = 0;
-        } else {
-            do {
-                nouvelIndex = Math.floor(
-                    Math.random() * cartesMusiques.length
-                );
-            } while (nouvelIndex === indexMusiqueActuelle);
-        }
-
-        selectionnerMusique(nouvelIndex);
+    if (cartesMusiques.length === 0) {
         return;
     }
 
-    // Si aucune musique n'est sélectionnée, commencer par la première
-    if (indexMusiqueActuelle === -1) {
-        selectionnerMusique(0);
-        return;
-    }
-
-    // Sinon, passer à la musique suivante dans l'ordre normal
-    const nouvelIndex =
-        (indexMusiqueActuelle + 1) % cartesMusiques.length;
+    const nouvelIndex = aleatoireActif
+        ? obtenirIndexSuivant()
+        : indexMusiqueActuelle === -1
+            ? 0
+            : (indexMusiqueActuelle + 1) % cartesMusiques.length;
 
     selectionnerMusique(nouvelIndex);
 });
@@ -732,6 +682,7 @@ boutonAleatoire.addEventListener("click", () => {
         String(aleatoireActif)
     );
 });
+
 function openPlaylist() {
     const fenetre = document.getElementById("fenetrePlaylist");
 
@@ -860,19 +811,6 @@ boutonsPlaylists.forEach((bouton) => {
         }
     });
 });
-function openPlaylist() {
-    const fenetre = document.getElementById("fenetrePlaylist");
-
-    fenetre.classList.remove("hidden");
-    fenetre.classList.add("flex");
-}
-
-function closePlaylist() {
-    const fenetre = document.getElementById("fenetrePlaylist");
-
-    fenetre.classList.remove("flex");
-    fenetre.classList.add("hidden");
-}
 
 async function chargerCommentaires(songId) {
     const listeCommentaires = document.getElementById("listeCommentaires");

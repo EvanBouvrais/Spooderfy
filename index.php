@@ -4,14 +4,20 @@ session_start();
 
 require_once("connexion.php");
 
-// Récupérer les musiques de la base de données
+// Récupérer le texte saisi dans la barre de recherche
+$recherche = trim($_POST["recherche"] ?? "");
+
+// Récupérer les musiques correspondant à la recherche
 $query = $mysqlClient->prepare(
     "SELECT id, name, audio, coverage
      FROM song
+     WHERE name LIKE :recherche
      ORDER BY name ASC"
 );
 
-$query->execute();
+$query->execute([
+    "recherche" => "%" . $recherche . "%"
+]);
 
 $musiques = $query->fetchAll(PDO::FETCH_ASSOC);
 
@@ -285,7 +291,7 @@ if (isset($_SESSION['id'])) {
             <?php
             if (isset($_SESSION['username'])): ?>
 
-                    <p class="text-white mt-5 ml-5">
+                    <p class="text-purple-500 mt-5 ml-5">
                         <?= htmlspecialchars($_SESSION['username']) ?>
                     </p>
 
@@ -446,7 +452,7 @@ if (isset($_SESSION['id'])) {
         
         <!-- Lecteur audio -->
         <section class="mt-auto flex h-45 w-full shrink-0 items-center justify-center rounded-t-[20px] border-t border-[#004FD9] bg-[#000C21]">
-            <div class="flex h-30 w-9/10 items-center gap-4 rounded-[25px] border-b-2 border-r-2 border-[#0055FF] bg-[#00050F] px-4">
+            <div id="lecteurAudio" class="contenu-cache flex h-30 w-9/10 items-center gap-4 rounded-[25px] border-b-2 border-r-2 border-[#0055FF] bg-[#00050F] px-4">
 
                 <!-- Informations sur le morceau -->
                 <div class="flex min-w-0 flex-1 items-center gap-3">
@@ -463,14 +469,11 @@ if (isset($_SESSION['id'])) {
                         <p id="titreMusique" class="truncate font-semibold text-white">
                             Beneath the Mask
                         </p>
-                        <p class="truncate text-sm text-gray-400">
-                            Persona 5
-                        </p>
                     </div>
                 </div>
 
                 <!-- Commandes et progression -->
-                <div class="flex w-2/5 min-w-0 flex-col items-center gap-3">
+                <div class="flex w-3/4 min-w-0 flex-col items-center gap-3">
 
                     <!-- Boutons de lecture -->
                     <div class="flex items-center justify-center gap-5">
@@ -547,29 +550,54 @@ if (isset($_SESSION['id'])) {
                         </button>
 
                     </div>
+       
+                    <!-- Barre de progression et bouton de fondu enchaîné -->
+                    <div class="flex w-full items-center gap-3">
 
-                    <!-- Barre de progression -->
-                    <div class="flex w-full items-center gap-2 text-xs text-gray-400">
-                        <span id="tempsActuel">0:00</span>
+                        <!-- Zone de progression -->
+                        <div class="flex min-w-0 flex-1 items-center gap-2 text-xs text-gray-400">
+                            <span id="tempsActuel" class="shrink-0">0:00</span>
 
-                        <input
-                            type="range"
-                            id="barreProgression"
-                            min="0"
-                            max="100"
-                            value="0"
-                            class="barre-progression min-w-0 flex-1 cursor-pointer"
-                            aria-label="Position dans le morceau"
+                            <input
+                                type="range"
+                                id="barreProgression"
+                                min="0"
+                                max="100"
+                                value="0"
+                                class="barre-progression min-w-0 flex-1 cursor-pointer"
+                                aria-label="Position dans le morceau"
+                            >
+
+                            <span id="dureeTotale" class="shrink-0">0:00</span>
+                        </div>
+
+                        <!-- Bouton de fondu enchaîné -->
+                        <button
+                            type="button"
+                            id="boutonFondu"
+                            aria-label="Activer le fondu enchaîné"
+                            aria-pressed="false"
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:scale-110"
                         >
+                            <img
+                                src="icon/mixer-brands-solid-full.svg"
+                                alt=""
+                                class="h-5 w-5 object-contain"
+                            >
+                        </button>
 
-                        <span id="dureeTotale">0:00</span>
                     </div>
 
                 </div>
 
                 <!-- Contrôle du volume -->
                 <div class="flex flex-1 items-center justify-end gap-2">
-                    <span class="text-white">🔊</span>
+                    <img
+                        id="iconeVolume"
+                        src="icon/volume-solid-full.svg"
+                        alt="Volume normal"
+                        class="h-5 w-5 cursor-pointer"
+                    >
 
                     <input
                         type="range"
@@ -578,7 +606,7 @@ if (isset($_SESSION['id'])) {
                         max="1"
                         step="0.01"
                         value="0.5"
-                        class="w-20 cursor-pointer accent-blue-500"
+                        class="barre-volume w-20 cursor-pointer"
                         aria-label="Volume"
                     >
                 </div>
@@ -587,7 +615,8 @@ if (isset($_SESSION['id'])) {
         </section>
 
         <!-- Fichier audio temporaire -->
-        <audio id="audio" preload="metadata" src="song/all_song/Beneath_the_Mask-rain--Persona_5.mp3"></audio>
+        <audio id="audio" preload="metadata"></audio>
+        <audio id="audioSuivant" preload="metadata"></audio>
 
     </main>
 
@@ -598,15 +627,80 @@ if (isset($_SESSION['id'])) {
     soit la musique actuelle et les commentaires -->
     <aside class="flex h-screen w-105 shrink-0 ml-auto flex-col border-l-2 border-t-2 rounded-[20px] border-[#004FD9] bg-[#000A1C]">
 
-        <!-- Hello, je sert à afficher la musique actuelle -->
-        <section>
-            
+        <!-- Hello, je sers à afficher la musique actuelle -->
+        <section id="musiqueActuelle" class="contenu-cache flex flex-col items-center gap-4 p-6">
+            <img
+                id="couvertureActuelle"
+                src=""
+                alt="Couverture de l'album"
+                class="aspect-square w-full max-w-80 rounded-xl object-cover"
+            >
+
+            <h2
+                id="titreActuel"
+                class="text-center text-xl font-bold text-white"
+            ></h2>
         </section>
 
-        <!-- Hello, je sert a afficher les commentaires -->
-        <section class="mt-auto ml-5 h-70 w-auto shrink-0 border-t-2 border-l-2 border-[#0055FF] rounded-tr-[20px] rounded-bl-[20px] bg-[#00050F]">
-            
+        <!-- Hello, je sers à afficher les commentaires -->
+        <section id="zoneCommentaires" onclick="ouvrirCommentaire()" class="mt-auto ml-5 flex h-90 w-auto shrink-0 flex-col rounded-tr-[20px] rounded-bl-[20px] border-t-2 border-l-2 border-[#0055FF] bg-[#00050F]">
+
+            <!-- Liste des commentaires -->
+            <div id="listeCommentaires" class="flex-1 overflow-y-auto p-4">
+
+            </div>
+
         </section>
+
+        <!-- Fenêtre de rédaction d'un commentaire -->
+        <div id="fenetreCommentaire" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/60 p-4">
+
+            <div class="w-full max-w-lg rounded-xl border-2 border-[#0055FF] bg-[#202A36] p-6">
+
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-white">Ajouter un commentaire</h2>
+
+                    <button
+                        type="button"
+                        onclick="fermerCommentaire()"
+                        class="text-2xl text-gray-400 hover:text-white"
+                        aria-label="Fermer"
+                    >
+                        &times;
+                    </button>
+                </div>
+
+                <form id="formulaireCommentaire" class="flex flex-col gap-4">
+
+                    <textarea
+                        id="texteCommentaire"
+                        name="text"
+                        maxlength="2000"
+                        placeholder="Écris un nouveau commentaire..."
+                        required
+                        class="min-h-32 w-full resize-y rounded-lg border border-[#0055FF] bg-[#171E26] p-3 text-white placeholder-gray-400 focus:outline-none"
+                    ></textarea>
+
+                    <div class="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onclick="fermerCommentaire()"
+                            class="rounded-lg bg-gray-600 px-4 py-2 text-white hover:bg-gray-500"
+                        >
+                            Annuler
+                        </button>
+
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#0055FF] px-4 py-2 font-semibold text-white hover:bg-blue-600"
+                        >
+                            Envoyer
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
 
     </aside>
 

@@ -11,6 +11,12 @@ fenetre.classList.add('hidden');
 }
 
 const audio = document.getElementById("audio");
+const audioSuivant = document.getElementById("audioSuivant");
+const boutonFondu = document.getElementById("boutonFondu");
+let fonduActif = false;
+let fonduEnCours = false;
+let lectureEnPause = false;
+const dureeFondu = 5;
 const boutonLecture = document.getElementById("boutonLecture");
 const boutonRepetition = document.getElementById("boutonRepetition");
 let repetitionActive = false;
@@ -21,6 +27,27 @@ const barreProgression = document.getElementById("barreProgression");
 const tempsActuel = document.getElementById("tempsActuel");
 const dureeTotale = document.getElementById("dureeTotale");
 const volume = document.getElementById("volume");
+let volumePrecedent = 0.5;
+let facteurVolumeActuel = 1;
+let facteurVolumeSuivant = 0;
+let fonduPrepare = false;
+
+// Fondu enchainé
+boutonFondu.addEventListener("click", () => {
+    fonduActif = !fonduActif;
+
+    boutonFondu.classList.toggle("bg-blue-600", fonduActif);
+    boutonFondu.classList.toggle("rounded-full", fonduActif);
+
+    boutonFondu.setAttribute("aria-pressed", String(fonduActif));
+
+    boutonFondu.setAttribute(
+        "aria-label",
+        fonduActif
+            ? "Désactiver le fondu enchaîné"
+            : "Activer le fondu enchaîné"
+    );
+});
 
 // Convertit les secondes en minutes:secondes
 function formaterTemps(secondes) {
@@ -37,13 +64,26 @@ function formaterTemps(secondes) {
 // Lecture et pause
 boutonLecture.addEventListener("click", async () => {
     if (audio.paused) {
+        lectureEnPause = false;
         try {
             await audio.play();
+
+            if (fonduEnCours) {
+                await audioSuivant.play();
+            }
         } catch (erreur) {
-            console.error("Impossible de lire le fichier audio :", erreur);
+            console.error(
+                "Impossible de reprendre la lecture :",
+                erreur
+            );
         }
     } else {
+        lectureEnPause = true;
         audio.pause();
+
+        if (fonduEnCours) {
+            audioSuivant.pause();
+        }
     }
 });
 
@@ -66,6 +106,11 @@ audio.addEventListener("ended", actualiserBouton);
 
 
 audio.addEventListener("ended", () => {
+    // Le fondu gère déjà le passage au morceau suivant.
+    if (fonduEnCours) {
+        return;
+    }
+
     if (cartesMusiques.length === 0) {
         return;
     }
@@ -122,6 +167,18 @@ audio.addEventListener("timeupdate", () => {
     "--progression",
     `${barreProgression.value}%`
     );
+    // Détecter les cinq dernières secondes du morceau
+    if (
+        fonduActif &&
+        !repetitionActive &&
+        !fonduPrepare &&
+        !fonduEnCours &&
+        Number.isFinite(audio.duration) &&
+        audio.duration - audio.currentTime <= dureeFondu
+    ) {
+        fonduPrepare = true;
+        lancerFonduEnchaine();
+    }
 });
 
 // Permet de changer de position dans le morceau
@@ -133,9 +190,51 @@ barreProgression.addEventListener("input", () => {
 });
 
 // Contrôle du volume
-volume.addEventListener("input", () => {
-    audio.volume = Number(volume.value);
-});
+function actualiserVolume() {
+    const volumeChoisi = Number(volume.value);
+
+    // Appliquer le volume choisi, modulé par le fondu
+    audio.volume = volumeChoisi * facteurVolumeActuel;
+    audioSuivant.volume = volumeChoisi * facteurVolumeSuivant;
+
+    const pourcentage = volumeChoisi * 100;
+
+    volume.style.setProperty("--volume", `${pourcentage}%`);
+
+    const iconeVolume = document.getElementById("iconeVolume");
+
+    if (pourcentage === 0) {
+        iconeVolume.src = "icon/volume-xmark-solid-full.svg";
+        iconeVolume.alt = "Volume coupé";
+    } else if (pourcentage <= 30) {
+        iconeVolume.src = "icon/volume-low-solid-full.svg";
+        iconeVolume.alt = "Volume faible";
+    } else if (pourcentage <= 70) {
+        iconeVolume.src = "icon/volume-solid-full.svg";
+        iconeVolume.alt = "Volume normal";
+    } else {
+        iconeVolume.src = "icon/volume-high-solid-full.svg";
+        iconeVolume.alt = "Volume élevé";
+    }
+
+    localStorage.setItem("volumeSpooderfy", volume.value);
+}
+
+function basculerVolume() {
+    if (Number(volume.value) > 0) {
+        // Sauvegarder le volume actuel avant de couper le son
+        volumePrecedent = Number(volume.value);
+
+        volume.value = 0;
+    } else {
+        // Restaurer le volume précédent
+        volume.value = volumePrecedent > 0 ? volumePrecedent : 0.5;
+    }
+
+    actualiserVolume();
+}
+
+volume.addEventListener("input", actualiserVolume);
 
 // Volume initial
 audio.volume = Number(volume.value);
@@ -153,11 +252,289 @@ let indexMusiqueActuelle = -1;
 let retourHistoriqueEnCours = false;
 
 async function selectionnerMusique(index) {
+const volumeSauvegarde = localStorage.getItem("volumeSpooderfy");
+
+if (volumeSauvegarde !== null) {
+    const valeur = Number(volumeSauvegarde);
+
+    if (Number.isFinite(valeur) && valeur >= 0 && valeur <= 1) {
+        volume.value = valeur;
+    }
+    if (valeur > 0) {
+        volumePrecedent = valeur;
+    }
+}
+
+actualiserVolume();
+
+
+const cartesMusiques = document.querySelectorAll("[data-song-audio]");
+let indexMusiqueActuelle = -1;
+let retourHistoriqueEnCours = false;
+
+
+function obtenirIndexSuivant() {
+    if (cartesMusiques.length === 0) {
+        return -1;
+    }
+
+    if (aleatoireActif) {
+        if (cartesMusiques.length === 1) {
+            return 0;
+        }
+
+        let nouvelIndex;
+
+        do {
+            nouvelIndex = Math.floor(
+                Math.random() * cartesMusiques.length
+            );
+        } while (nouvelIndex === indexMusiqueActuelle);
+
+        return nouvelIndex;
+    }
+
+    return (indexMusiqueActuelle + 1) % cartesMusiques.length;
+}
+
+let animationFondu = null;
+let identifiantFondu = 0;
+
+function annulerFonduEnchaine() {
+    // Invalider toute animation de fondu en cours
+    identifiantFondu++;
+
+    if (animationFondu !== null) {
+        cancelAnimationFrame(animationFondu);
+        animationFondu = null;
+    }
+
+    // Arrêter le lecteur secondaire
+    audioSuivant.pause();
+    audioSuivant.removeAttribute("src");
+    audioSuivant.load();
+
+    // Restaurer le volume normal du lecteur principal
+    facteurVolumeActuel = 1;
+    facteurVolumeSuivant = 0;
+
+    fonduEnCours = false;
+    fonduPrepare = false;
+
+    actualiserVolume();
+}
+
+async function lancerFonduEnchaine() {
+    if (
+        fonduEnCours ||
+        !fonduActif ||
+        repetitionActive ||
+        audio.paused
+    ) {
+        return;
+    }
+
+    const nouvelIndex = obtenirIndexSuivant();
+    const carteSuivante = cartesMusiques[nouvelIndex];
+
+    if (!carteSuivante) {
+        return;
+    }
+
+    fonduEnCours = true;
+
+    const volumeChoisi = Number(volume.value);
+    const volumeDepart = audio.volume;
+    const cheminSuivant = carteSuivante.dataset.songAudio;
+
+    audioSuivant.pause();
+    audioSuivant.src = cheminSuivant;
+    audioSuivant.load();
+    audioSuivant.volume = 0;
+
+    const identifiantEnCours = identifiantFondu;
+
+    try {
+        await audioSuivant.play();
+
+        if (identifiantEnCours !== identifiantFondu) {
+            return;
+        }
+
+        function progresserFondu() {
+            if (identifiantEnCours !== identifiantFondu) {
+                return;
+            }
+
+            const progression = Math.min(
+                audioSuivant.currentTime / dureeFondu,
+                1
+            );
+
+            facteurVolumeActuel = 1 - progression;
+            facteurVolumeSuivant = progression;
+
+            actualiserVolume();
+
+            if (progression < 1) {
+                animationFondu = requestAnimationFrame(progresserFondu);
+                return;
+            }
+
+            audio.pause();
+
+            const cheminAudioSuivant = audioSuivant.currentSrc || audioSuivant.src;
+
+            async function reprendreLecture() {
+                if (identifiantEnCours !== identifiantFondu) {
+                    audio.removeEventListener("loadedmetadata", reprendreLecture);
+                    return;
+                }
+
+                if (
+                    audio.currentSrc !== audio.src ||
+                    audio.readyState < HTMLMediaElement.HAVE_METADATA
+                ) {
+                    return;
+                }
+
+                audio.removeEventListener("loadedmetadata", reprendreLecture);
+
+                const positionSuivante = audioSuivant.currentTime;
+                let terminerRecherche;
+                const rechercheTerminee = new Promise((resolve) => {
+                    terminerRecherche = resolve;
+                    audio.addEventListener("seeked", resolve, { once: true });
+                });
+
+                audio.currentTime = positionSuivante;
+                if (audio.seeking) {
+                    await rechercheTerminee;
+                } else {
+                    audio.removeEventListener("seeked", terminerRecherche);
+                }
+
+                if (identifiantEnCours !== identifiantFondu) {
+                    return;
+                }
+
+                facteurVolumeActuel = 0;
+                facteurVolumeSuivant = 1;
+                actualiserVolume();
+
+                indexMusiqueActuelle = nouvelIndex;
+                actualiserInformationsMusique(nouvelIndex);
+                chargerCommentaires(carteSuivante.dataset.songId);
+                barreProgression.value =
+                    (audio.currentTime / audio.duration) * 100;
+                tempsActuel.textContent = formaterTemps(audio.currentTime);
+                dureeTotale.textContent = formaterTemps(audio.duration);
+
+                if (!lectureEnPause) {
+                    try {
+                        await audio.play();
+                    } catch (erreur) {
+                        console.error(
+                            "Impossible de reprendre la lecture :",
+                            erreur
+                        );
+                        return;
+                    }
+                }
+
+                audioSuivant.pause();
+                audioSuivant.removeAttribute("src");
+                audioSuivant.load();
+
+                facteurVolumeActuel = 1;
+                facteurVolumeSuivant = 0;
+                actualiserVolume();
+
+                fonduEnCours = false;
+                fonduPrepare = false;
+            }
+
+            audio.addEventListener("loadedmetadata", reprendreLecture);
+            audio.src = cheminAudioSuivant;
+            audio.load();
+    }
+
+    animationFondu = requestAnimationFrame(progresserFondu);
+
+    } catch (erreur) {
+        if (identifiantEnCours !== identifiantFondu) {
+            return;
+        }
+
+        console.error(
+            "Impossible de lancer le fondu enchaîné :",
+            erreur
+        );
+
+        audioSuivant.pause();
+        audioSuivant.removeAttribute("src");
+        audioSuivant.load();
+
+        facteurVolumeActuel = 1;
+        facteurVolumeSuivant = 0;
+        actualiserVolume();
+
+        fonduEnCours = false;
+        fonduPrepare = false;
+    }
+}
+
+function actualiserInformationsMusique(index) {
     const carte = cartesMusiques[index];
 
     if (!carte) {
         return;
     }
+
+    const nomMusique = carte.dataset.songName;
+    const cheminPochette = carte.dataset.songCoverage;
+
+    const pochetteMusique = document.getElementById("pochetteMusique");
+    const couvertureActuelle = document.getElementById("couvertureActuelle");
+    const titreActuel = document.getElementById("titreActuel");
+
+    cartesMusiques.forEach((carte) => {
+        carte.removeAttribute("data-playing");
+    });
+
+    carte.setAttribute("data-playing", "true");
+
+    if (cheminPochette) {
+        pochetteMusique.src = cheminPochette;
+        pochetteMusique.alt = "Pochette de " + nomMusique;
+
+        couvertureActuelle.src = cheminPochette;
+        couvertureActuelle.alt = "Pochette de " + nomMusique;
+    } else {
+        pochetteMusique.removeAttribute("src");
+        pochetteMusique.alt = "Aucune pochette disponible";
+
+        couvertureActuelle.removeAttribute("src");
+        couvertureActuelle.alt = "Aucune pochette disponible";
+    }
+
+    document.getElementById("titreMusique").textContent = nomMusique;
+    titreActuel.textContent = nomMusique;
+}
+
+async function selectionnerMusique(index) {
+    annulerFonduEnchaine();
+    lectureEnPause = false;
+
+    const carte = cartesMusiques[index];
+
+    if (!carte) {
+        return;
+    }
+
+    chargerCommentaires(carte.dataset.songId);
+    document.getElementById("lecteurAudio").classList.remove("contenu-cache");
+    document.getElementById("musiqueActuelle").classList.remove("contenu-cache");
 
     // Enregistrer le morceau quitté, sauf lors d'un retour en arrière
     if (
@@ -174,6 +551,9 @@ async function selectionnerMusique(index) {
     toutesLesCartesMusiques.forEach((carte) => {
     carte.removeAttribute("data-playing");
 });
+    cartesMusiques.forEach((carte) => {
+        carte.removeAttribute("data-playing");
+    });
 
     // Mettre en évidence la carte sélectionnée
     cartesMusiques[index].setAttribute("data-playing", "true");
@@ -186,6 +566,10 @@ async function selectionnerMusique(index) {
     const cheminPochette = carte.dataset.songCoverage;
     const pochetteMusique = document.getElementById("pochetteMusique");
 
+    const pochetteMusique = document.getElementById("pochetteMusique");
+    const couvertureActuelle = document.getElementById("couvertureActuelle");
+    const titreActuel = document.getElementById("titreActuel");
+
     // Mettre à jour la pochette
     if (cheminPochette) {
         pochetteMusique.src = cheminPochette;
@@ -193,10 +577,20 @@ async function selectionnerMusique(index) {
     } else {
         pochetteMusique.removeAttribute("src");
         pochetteMusique.alt = "Aucune pochette disponible";
+
+        couvertureActuelle.src = cheminPochette;
+        couvertureActuelle.alt = "Pochette de " + nomMusique;
+    } else {
+        pochetteMusique.removeAttribute("src");
+        pochetteMusique.alt = "Aucune pochette disponible";
+
+        couvertureActuelle.removeAttribute("src");
+        couvertureActuelle.alt = "Aucune pochette disponible";
     }
 
     // Mettre à jour le titre
     document.getElementById("titreMusique").textContent = nomMusique;
+    titreActuel.textContent = nomMusique;
 
     // Charger le nouveau fichier audio
     audio.src = cheminAudio;
@@ -236,6 +630,8 @@ toutesLesCartesMusiques.forEach((carte) => {
 });
 cartesMusiques = cartesPlaylist;
 
+cartesMusiques.forEach((carte, index) => {
+    carte.addEventListener("click", () => {
         selectionnerMusique(index);
     });
 });
@@ -477,3 +873,124 @@ function closePlaylist() {
     fenetre.classList.remove("flex");
     fenetre.classList.add("hidden");
 }
+
+async function chargerCommentaires(songId) {
+    const listeCommentaires = document.getElementById("listeCommentaires");
+
+    // Vider la liste pendant le chargement
+    listeCommentaires.replaceChildren();
+
+    try {
+        const reponse = await fetch(
+            `charger-commentaires.php?song_id=${encodeURIComponent(songId)}`
+        );
+
+        if (!reponse.ok) {
+            throw new Error("Erreur lors du chargement des commentaires.");
+        }
+
+        const commentaires = await reponse.json();
+
+        if (commentaires.length === 0) {
+            const message = document.createElement("p");
+            message.className = "text-gray-400";
+            message.textContent = "Aucun commentaire pour cette musique.";
+
+            listeCommentaires.appendChild(message);
+            return;
+        }
+
+        commentaires.forEach((commentaire) => {
+            const bloc = document.createElement("article");
+            bloc.className = "mb-4 rounded-lg bg-[#000A1C] p-3";
+
+            const auteur = document.createElement("p");
+            auteur.className = "mb-1 font-semibold text-purple-500";
+            auteur.textContent = commentaire.username;
+
+            const texte = document.createElement("p");
+            texte.className = "whitespace-pre-wrap wrap-break-word text-white";
+            texte.textContent = commentaire.text;
+
+            bloc.append(auteur, texte);
+            listeCommentaires.appendChild(bloc);
+        });
+
+    } catch (erreur) {
+        console.error(erreur);
+
+        const message = document.createElement("p");
+        message.className = "text-red-400";
+        message.textContent = "Impossible de charger les commentaires.";
+
+        listeCommentaires.appendChild(message);
+    }
+}
+
+function ouvrirCommentaire() {
+    const fenetre = document.getElementById("fenetreCommentaire");
+
+    fenetre.classList.remove("hidden");
+    fenetre.classList.add("flex");
+
+    document.getElementById("texteCommentaire").focus();
+}
+
+function fermerCommentaire() {
+    const fenetre = document.getElementById("fenetreCommentaire");
+
+    fenetre.classList.add("hidden");
+    fenetre.classList.remove("flex");
+}
+
+const formulaireCommentaire = document.getElementById("formulaireCommentaire");
+
+
+formulaireCommentaire.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const champTexte = document.getElementById("texteCommentaire");
+    const texte = champTexte.value.trim();
+
+    if (texte === "") {
+        return;
+    }
+
+    const carte = cartesMusiques[indexMusiqueActuelle];
+
+    if (!carte) {
+        alert("Sélectionne d'abord une musique.");
+        return;
+    }
+
+    const donnees = new FormData();
+
+    donnees.append("song_id", carte.dataset.songId);
+    donnees.append("text", texte);
+
+    try {
+        const reponse = await fetch("enregistrer-commentaire.php", {
+            method: "POST",
+            body: donnees
+        });
+
+        const resultat = await reponse.json();
+
+        if (!reponse.ok) {
+            throw new Error(
+                resultat.erreur || "Impossible de publier le commentaire."
+            );
+        }
+
+        champTexte.value = "";
+        fermerCommentaire();
+
+        await chargerCommentaires(carte.dataset.songId);
+
+    } catch (erreur) {
+        console.error(erreur);
+        alert(erreur.message || "Une erreur est survenue lors de la publication.");
+    }
+});
+
+document.getElementById("iconeVolume").addEventListener("click", basculerVolume);

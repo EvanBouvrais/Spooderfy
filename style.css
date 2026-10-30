@@ -50,3 +50,106 @@
     height: 5px;
     border-radius: 999px;
 }
+
+/* Barre de volume */
+.barre-volume {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 5rem;
+    height: 5px;
+    background: linear-gradient(
+        to right,
+        #0055FF 0%,
+        #0055FF var(--volume, 50%),
+        #15233B var(--volume, 50%),
+        #15233B 100%
+    );
+    border-radius: 999px;
+    outline: none;
+}
+
+/* Curseur pour Chrome, Edge et Opera */
+.barre-volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #0055FF;
+    border: none;
+    cursor: pointer;
+    opacity: 1;
+}
+
+/* Curseur pour Firefox */
+.barre-volume::-moz-range-thumb {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0055FF;
+    border: none;
+    cursor: pointer;
+    opacity: 1;
+}
+
+/* Partie remplie dans Firefox */
+.barre-volume::-moz-range-progress {
+    background: #0055FF;
+    height: 5px;
+    border-radius: 999px;
+}
+
+#lecteurAudio.contenu-cache > * {
+    visibility: hidden;
+}
+
+#musiqueActuelle.contenu-cache > * {
+    visibility: hidden;
+}
+
+/* Personnalisation des barres de défilement */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(0 85 255 / 75%) transparent;
+}
+
+/* Chrome, Edge et Opera */
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: rgb(0 85 255 / 75%);
+    border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(51 119 255 / 85%);
+}
+
+/* Masquer les boutons de défilement */
+*::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button:single-button,
+*::-webkit-scrollbar-button:vertical:decrement,
+*::-webkit-scrollbar-button:vertical:increment,
+*::-webkit-scrollbar-button:horizontal:decrement,
+*::-webkit-scrollbar-button:horizontal:increment {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+html *::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}

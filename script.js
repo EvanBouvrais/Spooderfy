@@ -237,6 +237,21 @@ function basculerVolume() {
 volume.addEventListener("input", actualiserVolume);
 
 // Volume initial
+audio.volume = Number(volume.value);
+
+
+const toutesLesCartesMusiques = Array.from(
+    document.querySelectorAll("[data-song-audio]")
+);
+
+// File de lecture actuelle : toutes les musiques ou une playlist
+let cartesMusiques = [...toutesLesCartesMusiques];
+
+let nomPlaylistActuelle = null;
+let indexMusiqueActuelle = -1;
+let retourHistoriqueEnCours = false;
+
+async function selectionnerMusique(index) {
 const volumeSauvegarde = localStorage.getItem("volumeSpooderfy");
 
 if (volumeSauvegarde !== null) {
@@ -533,6 +548,9 @@ async function selectionnerMusique(index) {
     retourHistoriqueEnCours = false;
 
     // Retirer la mise en évidence de toutes les cartes
+    toutesLesCartesMusiques.forEach((carte) => {
+    carte.removeAttribute("data-playing");
+});
     cartesMusiques.forEach((carte) => {
         carte.removeAttribute("data-playing");
     });
@@ -546,6 +564,7 @@ async function selectionnerMusique(index) {
     const cheminAudio = carte.dataset.songAudio;
     const nomMusique = carte.dataset.songName;
     const cheminPochette = carte.dataset.songCoverage;
+    const pochetteMusique = document.getElementById("pochetteMusique");
 
     const pochetteMusique = document.getElementById("pochetteMusique");
     const couvertureActuelle = document.getElementById("couvertureActuelle");
@@ -555,6 +574,9 @@ async function selectionnerMusique(index) {
     if (cheminPochette) {
         pochetteMusique.src = cheminPochette;
         pochetteMusique.alt = "Pochette de " + nomMusique;
+    } else {
+        pochetteMusique.removeAttribute("src");
+        pochetteMusique.alt = "Aucune pochette disponible";
 
         couvertureActuelle.src = cheminPochette;
         couvertureActuelle.alt = "Pochette de " + nomMusique;
@@ -589,6 +611,24 @@ async function selectionnerMusique(index) {
         );
     }
 }
+
+toutesLesCartesMusiques.forEach((carte) => {
+    carte.addEventListener("click", () => {
+        // Un clic dans le catalogue complet quitte la playlist.
+        cartesMusiques = [...toutesLesCartesMusiques];
+        nomPlaylistActuelle = null;
+
+        historiqueMusiques = [];
+
+        const index = cartesMusiques.indexOf(carte);
+
+        indexMusiqueActuelle = -1;
+
+// Réafficher toutes les musiques du catalogue
+toutesLesCartesMusiques.forEach((carte) => {
+    carte.classList.remove("hidden");
+});
+cartesMusiques = cartesPlaylist;
 
 cartesMusiques.forEach((carte, index) => {
     carte.addEventListener("click", () => {
@@ -692,6 +732,147 @@ boutonAleatoire.addEventListener("click", () => {
         String(aleatoireActif)
     );
 });
+function openPlaylist() {
+    const fenetre = document.getElementById("fenetrePlaylist");
+
+    fenetre.classList.remove("hidden");
+    fenetre.classList.add("flex");
+}
+
+function closePlaylist() {
+    const fenetre = document.getElementById("fenetrePlaylist");
+
+    fenetre.classList.remove("flex");
+    fenetre.classList.add("hidden");
+}
+
+document.querySelectorAll(".carte-selection").forEach((carte) => {
+    const checkbox = carte.querySelector('input[type="checkbox"]');
+
+    // État initial
+    carte.dataset.select = String(checkbox.checked);
+
+    checkbox.addEventListener("change", () => {
+        carte.dataset.select = String(checkbox.checked);
+    });
+});
+const ordreMusiques = document.getElementById("ordreMusiques");
+
+const casesMusiques = document.querySelectorAll(
+    "#fenetrePlaylist [data-song-checkbox]"
+);
+
+let ordreSelection = [];
+
+casesMusiques.forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+        const idMusique = checkbox.value;
+        const carte = checkbox.closest("label");
+
+        if (checkbox.checked) {
+            // Ajouter à la fin de l'ordre de sélection
+            if (!ordreSelection.includes(idMusique)) {
+                ordreSelection.push(idMusique);
+            }
+
+            carte.dataset.select = "true";
+        } else {
+            // Retirer la musique désélectionnée
+            ordreSelection = ordreSelection.filter(
+                id => id !== idMusique
+            );
+
+            delete carte.dataset.select;
+        }
+
+        // Reconstruire les champs envoyés à PHP
+        ordreMusiques.replaceChildren();
+
+        ordreSelection.forEach((id) => {
+            const input = document.createElement("input");
+
+            input.type = "hidden";
+            input.name = "song_ids[]";
+            input.value = id;
+
+            ordreMusiques.appendChild(input);
+        });
+    });
+});
+const boutonsPlaylists = document.querySelectorAll(
+    "[data-playlist-id]"
+);
+
+boutonsPlaylists.forEach((bouton) => {
+    bouton.addEventListener("click", async () => {
+        const playlistId = bouton.dataset.playlistId;
+
+        try {
+            const reponse = await fetch(
+                `charger-playlist.php?id=${encodeURIComponent(playlistId)}`
+            );
+
+            if (!reponse.ok) {
+                throw new Error("Impossible de charger la playlist.");
+            }
+
+            const resultat = await reponse.json();
+
+            if (!Array.isArray(resultat)) {
+                throw new Error(
+                    resultat.erreur || "Réponse invalide du serveur."
+                );
+            }
+
+            // Retrouver les cartes correspondant aux morceaux reçus.
+            const cartesPlaylist = resultat.map((musique) => {
+                return toutesLesCartesMusiques.find(
+                    (carte) =>
+                        carte.dataset.songId === String(musique.id)
+                );
+            }).filter(Boolean);
+
+            if (cartesPlaylist.length === 0) {
+                alert("Cette playlist ne contient aucune musique.");
+                return;
+            }
+
+            // Remplacer la file de lecture par cette playlist.
+            cartesMusiques = cartesPlaylist;
+            nomPlaylistActuelle =
+                bouton.querySelector("span")?.textContent.trim()
+                || "Playlist";
+
+            // Réinitialiser l'historique et la position.
+            historiqueMusiques = [];
+            indexMusiqueActuelle = -1;
+
+            // Lire le premier morceau de la playlist.
+            await selectionnerMusique(0);
+
+        } catch (erreur) {
+            console.error(
+                "Erreur lors du chargement de la playlist :",
+                erreur
+            );
+
+            alert("Impossible de charger cette playlist.");
+        }
+    });
+});
+function openPlaylist() {
+    const fenetre = document.getElementById("fenetrePlaylist");
+
+    fenetre.classList.remove("hidden");
+    fenetre.classList.add("flex");
+}
+
+function closePlaylist() {
+    const fenetre = document.getElementById("fenetrePlaylist");
+
+    fenetre.classList.remove("flex");
+    fenetre.classList.add("hidden");
+}
 
 async function chargerCommentaires(songId) {
     const listeCommentaires = document.getElementById("listeCommentaires");

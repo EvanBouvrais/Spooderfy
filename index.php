@@ -380,11 +380,23 @@ if (isset($_SESSION['id'])) {
         <!-- Zone d'affichage des musiques -->
         <section class="min-h-0 flex-1 overflow-y-auto py-6 pr-6">
 
-            <h2 class="mb-5 text-2xl font-bold text-white">
-                Toutes les musiques
-            </h2>
+            <div class="mb-5 flex items-center justify-between gap-4">
+                <h2
+                    id="titreListeMusiques"
+                    class="min-w-0 truncate text-2xl font-bold text-white"
+                >
+                    Toutes les musiques
+                </h2>
+                <button
+                    id="boutonToutesLesMusiques"
+                    type="button"
+                    class="hidden shrink-0 text-sm text-blue-300 underline hover:text-blue-200"
+                >
+                    Toutes les musiques
+                </button>
+            </div>
 
-            <div class="flex flex-col gap-3">
+            <div id="listeMusiques" class="flex flex-col gap-3">
 
                 <?php foreach ($musiques as $musique): ?>
                 
@@ -440,9 +452,13 @@ if (isset($_SESSION['id'])) {
 
             <?php if (empty($musiques)): ?>
 
-                <p class="mt-6 text-gray-400">
+                <p id="messageListeMusiques" class="mt-6 text-gray-400">
                     Aucune musique n'est disponible pour le moment.
                 </p>
+
+            <?php else: ?>
+
+                <p id="messageListeMusiques" class="mt-6 hidden text-gray-400"></p>
 
             <?php endif; ?>
 

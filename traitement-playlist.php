@@ -72,35 +72,38 @@ try {
         exit('Sélectionne au moins une musique existante.');
     }
 
-    // La table playlist exige aussi un song_id, conservé pour compatibilité.
     $requete = $mysqlClient->prepare(
-        'INSERT INTO playlist (name, user_id, song_id)
-         VALUES (:name, :user_id, :song_id)'
+        'INSERT INTO playlist (name, user_id)
+         VALUES (:name, :user_id)'
     );
 
     $requete->execute([
         'name' => $nom,
-        'user_id' => $userId,
-        'song_id' => (int) $songIds[0]
+        'user_id' => $userId
     ]);
 
     $playlistId = $mysqlClient->lastInsertId();
 
-    // L'identifiant auto-incrémenté du pivot conserve l'ordre d'insertion.
+    // Conserver l'ordre des morceaux dans la playlist.
     $ajout = $mysqlClient->prepare(
         'INSERT INTO pivot_playlist
-            (playlist_id, song_id)
+            (playlist_id, song_id, position)
          VALUES
-            (:playlist_id, :song_id)'
+            (:playlist_id, :song_id, :position)'
     );
+
+    $position = 1;
 
     foreach ($songIds as $songId) {
         $songId = (int) $songId;
 
         $ajout->execute([
             'playlist_id' => $playlistId,
-            'song_id' => $songId
+            'song_id' => $songId,
+            'position' => $position
         ]);
+
+        $position++;
     }
 
     $mysqlClient->commit();

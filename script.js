@@ -262,6 +262,26 @@ let nomPlaylistActuelle = null;
 let indexMusiqueActuelle = -1;
 let retourHistoriqueEnCours = false;
 
+function afficherCatalogueMusiques() {
+    cartesMusiques = [...toutesLesCartesMusiques];
+    nomPlaylistActuelle = null;
+    historiqueMusiques = [];
+    indexMusiqueActuelle = -1;
+
+    toutesLesCartesMusiques.forEach((carte) => {
+        carte.classList.remove("hidden");
+    });
+
+    document.getElementById("titreListeMusiques").textContent =
+        "Toutes les musiques";
+    document.getElementById("boutonToutesLesMusiques").classList.add("hidden");
+    document.getElementById("messageListeMusiques").classList.add("hidden");
+}
+
+document
+    .getElementById("boutonToutesLesMusiques")
+    .addEventListener("click", afficherCatalogueMusiques);
+
 
 function obtenirIndexSuivant() {
     if (cartesMusiques.length === 0) {
@@ -595,11 +615,11 @@ async function selectionnerMusique(index) {
 
 toutesLesCartesMusiques.forEach((carte) => {
     carte.addEventListener("click", async () => {
-        // Un clic dans le catalogue complet quitte la playlist.
-        cartesMusiques = [...toutesLesCartesMusiques];
-        nomPlaylistActuelle = null;
-        historiqueMusiques = [];
-        indexMusiqueActuelle = -1;
+        if (nomPlaylistActuelle === null) {
+            historiqueMusiques = [];
+            indexMusiqueActuelle = -1;
+        }
+
         await selectionnerMusique(cartesMusiques.indexOf(carte));
     });
 });
@@ -783,20 +803,38 @@ boutonsPlaylists.forEach((bouton) => {
                 );
             }).filter(Boolean);
 
-            if (cartesPlaylist.length === 0) {
-                alert("Cette playlist ne contient aucune musique.");
-                return;
-            }
-
-            // Remplacer la file de lecture par cette playlist.
-            cartesMusiques = cartesPlaylist;
-            nomPlaylistActuelle =
+            const nomPlaylist =
                 bouton.querySelector("span")?.textContent.trim()
                 || "Playlist";
 
-            // Réinitialiser l'historique et la position.
+            cartesMusiques = cartesPlaylist;
+            nomPlaylistActuelle = nomPlaylist;
             historiqueMusiques = [];
             indexMusiqueActuelle = -1;
+
+            toutesLesCartesMusiques.forEach((carte) => {
+                carte.classList.toggle(
+                    "hidden",
+                    !cartesPlaylist.includes(carte)
+                );
+            });
+
+            document.getElementById("titreListeMusiques").textContent =
+                nomPlaylist;
+            document
+                .getElementById("boutonToutesLesMusiques")
+                .classList.remove("hidden");
+
+            if (cartesPlaylist.length === 0) {
+                const message = document.getElementById("messageListeMusiques");
+                message.textContent = "Cette playlist ne contient aucune musique.";
+                message.classList.remove("hidden");
+                return;
+            }
+
+            document
+                .getElementById("messageListeMusiques")
+                .classList.add("hidden");
 
             // Lire le premier morceau de la playlist.
             await selectionnerMusique(0);

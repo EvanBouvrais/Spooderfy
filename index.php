@@ -21,6 +21,15 @@ $query->execute([
 
 $musiques = $query->fetchAll(PDO::FETCH_ASSOC);
 
+$couleurPseudoSession = $_SESSION['username_color'] ?? '#a855f7';
+
+if (
+    !is_string($couleurPseudoSession)
+    || !preg_match('/\A#[0-9a-fA-F]{6}\z/', $couleurPseudoSession)
+) {
+    $couleurPseudoSession = '#a855f7';
+}
+
 ?>
 
 
@@ -64,7 +73,7 @@ $musiques = $query->fetchAll(PDO::FETCH_ASSOC);
         <!-- Hello je sert à afficher les playlists de mon utilisateur -->
         <section class="pr-6">
 
-            <h2 class="mb-4 text-xl font-bold text-white">Mes playlists</h2>
+            <h2 class="mb-4 mt-3 ml-3 text-xl font-bold text-white">Mes playlists</h2>
             <?php if (isset($_GET['erreur']) && $_GET['erreur'] === 'connexion'): ?>
                 <p class="mb-3 text-sm text-red-400">Connecte-toi pour créer une playlist.</p>
             <?php endif; ?>
@@ -269,7 +278,7 @@ $musiques = $query->fetchAll(PDO::FETCH_ASSOC);
             <p class="text-white mt-5 ml-5">Session actuelle:</p>
             <?php if (isset($_SESSION['username'])): ?>
 
-                <p class="text-purple-500 mt-5 ml-5">
+                <p class="mt-5 ml-5" style="color: <?= htmlspecialchars($couleurPseudoSession, ENT_QUOTES, 'UTF-8') ?>">
                     <?= htmlspecialchars($_SESSION['username']) ?>
                 </p>
 
@@ -314,6 +323,10 @@ $musiques = $query->fetchAll(PDO::FETCH_ASSOC);
                     </label>
 
                     <input type="text" id="username" name="username" maxlength="30" required class="w-full rounded-md p-2 mb-4 bg-[#151D28] text-white border border-[#2577D9]" placeholder="Ton pseudonyme">
+
+                    <label for="usernameColor" class="text-white block mb-2">Couleur du pseudonyme</label>
+
+                    <input type="color" id="usernameColor" name="username_color" value="<?= htmlspecialchars($couleurPseudoSession, ENT_QUOTES, 'UTF-8') ?>" class="mb-4 h-10 w-full cursor-pointer rounded-md border border-[#2577D9] bg-[#151D28] p-1">
 
                     <button type="submit" class="w-full bg-[#2577D9] hover:bg-blue-600 text-white rounded-md p-2">
                         Se connecter

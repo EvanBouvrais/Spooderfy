@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.3
+-- version 6.0.0-dev+20261014.d250d31a41
 -- https://www.phpmyadmin.net/
 --
--- Hôte : localhost:3306
--- Généré le : mer. 28 oct. 2026 à 10:22
--- Version du serveur : 8.4.3
--- Version de PHP : 8.4.17
+-- Host: localhost:3306
+-- Generation Time: Oct 30, 2026 at 09:49 AM
+-- Server version: 8.4.3
+-- PHP Version: 8.3.33
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,27 +18,39 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Base de données : `spooderfy`
+-- Database: `spooderfy`
 --
 
 -- --------------------------------------------------------
 
 --
--- Structure de la table `comments`
+-- Table structure for table `comments`
 --
-
 CREATE TABLE `comments` (
   `id` int NOT NULL,
   `user_id` int NOT NULL,
-  `text` text NOT NULL
+  `text` text NOT NULL,
+  `song_id` int NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `comments`
+--
+
+INSERT INTO `comments` (`id`, `user_id`, `text`, `song_id`) VALUES
+(1, 1, 'clairement la meilleure version des 4 itérations de cette musique', 5),
+(2, 3, 'ah', 2),
+(3, 4, 'oui', 5),
+(4, 4, 'test', 4),
+(5, 4, 'la version rain possède moins d\'instruments et c\'est mieux comme ca', 5),
+(6, 5, 'j\'approuve tout ce que j\'ai écrit sous d\'autres noms', 5),
+(7, 4, 'Musique sympa', 6);
 
 -- --------------------------------------------------------
 
 --
--- Structure de la table `creator`
+-- Table structure for table `creator`
 --
-
 CREATE TABLE `creator` (
   `id` int NOT NULL,
   `name` varchar(250) NOT NULL
@@ -47,9 +59,8 @@ CREATE TABLE `creator` (
 -- --------------------------------------------------------
 
 --
--- Structure de la table `pivot_creator`
+-- Table structure for table `pivot_creator`
 --
-
 CREATE TABLE `pivot_creator` (
   `id` int NOT NULL,
   `song_id` int NOT NULL,
@@ -59,34 +70,44 @@ CREATE TABLE `pivot_creator` (
 -- --------------------------------------------------------
 
 --
--- Structure de la table `pivot_playlist`
+-- Table structure for table `pivot_playlist`
+--
+CREATE TABLE `pivot_playlist` (
+  `playlist_id` int NOT NULL,
+  `song_id` int NOT NULL,
+  `position` int NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `pivot_playlist`
 --
 
-CREATE TABLE `pivot_playlist` (
-  `id` int NOT NULL,
-  `playlist_id` int NOT NULL,
-  `song_id` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+INSERT INTO `pivot_playlist` (`playlist_id`, `song_id`, `position`) VALUES
+(1, 1, 0);
 
 -- --------------------------------------------------------
 
 --
--- Structure de la table `playlist`
+-- Table structure for table `playlist`
 --
-
 CREATE TABLE `playlist` (
   `id` int NOT NULL,
   `name` varchar(250) NOT NULL,
-  `user_id` int NOT NULL,
-  `song_id` int NOT NULL
+  `user_id` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `playlist`
+--
+
+INSERT INTO `playlist` (`id`, `name`, `user_id`) VALUES
+(1, 'Deltarune', 4);
 
 -- --------------------------------------------------------
 
 --
--- Structure de la table `song`
+-- Table structure for table `song`
 --
-
 CREATE TABLE `song` (
   `id` int NOT NULL,
   `name` varchar(250) NOT NULL,
@@ -96,7 +117,7 @@ CREATE TABLE `song` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Déchargement des données de la table `song`
+-- Dumping data for table `song`
 --
 
 INSERT INTO `song` (`id`, `name`, `creator_id`, `audio`, `coverage`) VALUES
@@ -114,113 +135,114 @@ INSERT INTO `song` (`id`, `name`, `creator_id`, `audio`, `coverage`) VALUES
 -- --------------------------------------------------------
 
 --
--- Structure de la table `user`
+-- Table structure for table `user`
 --
-
 CREATE TABLE `user` (
   `id` int NOT NULL,
   `username` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
--- Déchargement des données de la table `user`
+-- Dumping data for table `user`
 --
 
 INSERT INTO `user` (`id`, `username`) VALUES
 (1, 'hugo'),
-(2, 'joe');
+(2, 'joe'),
+(3, 'Doll'),
+(4, 'Dummy'),
+(5, 'Diel');
 
 --
--- Index pour les tables déchargées
+-- Indexes for dumped tables
 --
 
 --
--- Index pour la table `comments`
+-- Indexes for table `comments`
 --
 ALTER TABLE `comments`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_comments_song` (`song_id`);
 
 --
--- Index pour la table `creator`
+-- Indexes for table `creator`
 --
 ALTER TABLE `creator`
   ADD PRIMARY KEY (`id`);
 
 --
--- Index pour la table `pivot_creator`
+-- Indexes for table `pivot_creator`
 --
 ALTER TABLE `pivot_creator`
   ADD PRIMARY KEY (`id`);
 
 --
--- Index pour la table `pivot_playlist`
---
-ALTER TABLE `pivot_playlist`
-  ADD PRIMARY KEY (`id`);
-
---
--- Index pour la table `playlist`
+-- Indexes for table `playlist`
 --
 ALTER TABLE `playlist`
   ADD PRIMARY KEY (`id`);
 
 --
--- Index pour la table `song`
+-- Indexes for table `song`
 --
 ALTER TABLE `song`
   ADD PRIMARY KEY (`id`);
 
 --
--- Index pour la table `user`
+-- Indexes for table `user`
 --
 ALTER TABLE `user`
   ADD PRIMARY KEY (`id`);
 
 --
--- AUTO_INCREMENT pour les tables déchargées
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT pour la table `comments`
+-- AUTO_INCREMENT for table `comments`
 --
 ALTER TABLE `comments`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT pour la table `creator`
+-- AUTO_INCREMENT for table `creator`
 --
 ALTER TABLE `creator`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT pour la table `pivot_creator`
+-- AUTO_INCREMENT for table `pivot_creator`
 --
 ALTER TABLE `pivot_creator`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT pour la table `pivot_playlist`
---
-ALTER TABLE `pivot_playlist`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT pour la table `playlist`
+-- AUTO_INCREMENT for table `playlist`
 --
 ALTER TABLE `playlist`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT pour la table `song`
+-- AUTO_INCREMENT for table `song`
 --
 ALTER TABLE `song`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT pour la table `user`
+-- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `comments`
+--
+ALTER TABLE `comments`
+  ADD CONSTRAINT `fk_comments_song` FOREIGN KEY (`song_id`) REFERENCES `song` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

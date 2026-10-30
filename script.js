@@ -1209,7 +1209,12 @@ async function chargerCommentaires(songId) {
             bloc.className = "mb-4 rounded-lg bg-[#000A1C] p-3";
 
             const auteur = document.createElement("p");
-            auteur.className = "mb-1 font-semibold text-purple-500";
+            auteur.className = "mb-1 font-semibold";
+            auteur.style.color =
+                typeof commentaire.username_color === "string" &&
+                /^#[0-9a-f]{6}$/i.test(commentaire.username_color)
+                    ? commentaire.username_color
+                    : "#a855f7";
             auteur.textContent = commentaire.username;
 
             const texte = document.createElement("p");

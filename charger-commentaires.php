@@ -17,7 +17,7 @@ if (!$songId || $songId < 1) {
 
 try {
     $query = $mysqlClient->prepare(
-        "SELECT comments.text, user.username
+        "SELECT comments.text, user.username, user.username_color
          FROM comments
          INNER JOIN user ON comments.user_id = user.id
          WHERE comments.song_id = :song_id

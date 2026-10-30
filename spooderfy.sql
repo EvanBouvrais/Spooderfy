@@ -139,7 +139,8 @@ INSERT INTO `song` (`id`, `name`, `creator_id`, `audio`, `coverage`) VALUES
 --
 CREATE TABLE `user` (
   `id` int NOT NULL,
-  `username` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
+  `username` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `username_color` char(7) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --

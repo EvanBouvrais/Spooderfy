@@ -12,9 +12,15 @@ require_once("connexion.php");
 // Récupérer et nettoyer le pseudonyme
 $usernameInput = $_POST["username"] ?? "";
 $username = is_string($usernameInput) ? trim($usernameInput) : "";
+$couleurInput = $_POST["username_color"] ?? "#a855f7";
+$couleur = is_string($couleurInput) ? strtolower($couleurInput) : "";
 
 // Vérifier que le pseudonyme est valide
-if ($username === "" || mb_strlen($username, "UTF-8") > 30) {
+if (
+    $username === ""
+    || mb_strlen($username, "UTF-8") > 30
+    || !preg_match('/\A#[0-9a-f]{6}\z/', $couleur)
+) {
     header("Location: index.php");
     exit;
 }
@@ -36,12 +42,13 @@ try {
     // Si le pseudonyme n'existe pas, créer un utilisateur
     if (!$user) {
         $query = $mysqlClient->prepare(
-            "INSERT INTO user (username)
-             VALUES (:username)"
+            "INSERT INTO user (username, username_color)
+             VALUES (:username, :username_color)"
         );
 
         $query->execute([
-            "username" => $username
+            "username" => $username,
+            "username_color" => $couleur
         ]);
 
         // Récupérer l'identifiant du nouvel utilisateur
@@ -51,6 +58,16 @@ try {
         // L'utilisateur existe déjà
         $id = $user["id"];
         $username = $user["username"];
+
+        $query = $mysqlClient->prepare(
+            "UPDATE user
+             SET username_color = :username_color
+             WHERE id = :id"
+        );
+        $query->execute([
+            "username_color" => $couleur,
+            "id" => $id
+        ]);
     }
 
     $ancienneIdentite = $_SESSION["id"] ?? null;
@@ -58,6 +75,7 @@ try {
     // Enregistrer l'identité de l'utilisateur
     $_SESSION["id"] = (int) $id;
     $_SESSION["username"] = $username;
+    $_SESSION["username_color"] = $couleur;
 
     header("Location: index.php");
     exit;

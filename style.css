@@ -106,3 +106,50 @@
 #musiqueActuelle.contenu-cache > * {
     visibility: hidden;
 }
+
+/* Personnalisation des barres de défilement */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(0 85 255 / 75%) transparent;
+}
+
+/* Chrome, Edge et Opera */
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: rgb(0 85 255 / 75%);
+    border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(51 119 255 / 85%);
+}
+
+/* Masquer les boutons de défilement */
+*::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button:single-button,
+*::-webkit-scrollbar-button:vertical:decrement,
+*::-webkit-scrollbar-button:vertical:increment,
+*::-webkit-scrollbar-button:horizontal:decrement,
+*::-webkit-scrollbar-button:horizontal:increment {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+html *::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
